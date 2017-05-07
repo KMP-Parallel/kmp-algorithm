@@ -21,10 +21,10 @@ void fillup(char** matrix, int rankid, char* msg, int len, int offset);
 void freeDouble(char** matrix, int nproc);
 void printMatrix(char **matrix, int nproc, int id, int length);
 int* getRealIdx(int* answer, int len, int myrank, int x, int y, int* length);
-void pinpoint(int* result, int longlen, int* msg, int shortlen);
+void pinpoint(int* result, int* msg, int shortlen);
 
 
-void pinpoint(int* result, int longlen, int* msg, int shortlen){
+void pinpoint(int* result, int* msg, int shortlen){
 	int j = 0;
 	for(j=0; j<shortlen; j++){
 		if(j > 0 && msg[j] == 0)
@@ -38,7 +38,6 @@ void pinpoint(int* result, int longlen, int* msg, int shortlen){
 // get the exact idx(es) in each process
 // return back an int pointer
 int* getRealIdx(int* answer, int len, int myrank, int x, int y, int* length){
-	// int package[len];
 	int* package = (int *) calloc(len, sizeof(int));
 	int index;
 	int real_len = 0;
@@ -50,11 +49,11 @@ int* getRealIdx(int* answer, int len, int myrank, int x, int y, int* length){
 			if(myrank == 0){
 				index =  answer[i];
 				package[real_len++] = index;
-				printf("This is REAL index: %d\n", index);
+				// printf("This is REAL index: %d\n", index);
 			}else{
 				index = x * myrank - y + answer[i];
 				package[real_len++] = index;
-				printf("This is REAL index: %d\n", index);
+				// printf("This is REAL index: %d\n", index);
 			}
 			
 		}
@@ -130,7 +129,6 @@ int* kmp(char* target, char* pattern, int* table, int myrank){
 			i++;
 		}
 		if(j == m){
-			// printf("this is matching %d.\n", i-j);
 			answer[index++] = i-j;
 			j = table[j-1];
 
@@ -216,40 +214,53 @@ int main(int argc, char** argv){
 		strncpy(send_msg, target + str_per_proc-m + 1 + myrank * str_per_proc, m-1);
 		MPI_Send(send_msg, m-1, MPI_CHAR, myrank+1, tag, MPI_COMM_WORLD);
 
-		// the master process does not to recv
+		/* Processes other than master one 
+		 * Re-recv more msg from the previous process whose rank is myrank-1
+		 * kmp implementation
+		 * Send the result back to master process
+		 */
 		if(myrank!=master){
 			MPI_Recv(end_msg, m-1, MPI_CHAR, myrank-1, tag, MPI_COMM_WORLD, &status);
 			fillup(matrix, myrank, end_msg, m-1, 0);
-		}
-		// implement kmp to get the matching result
-		int* answer = kmp(matrix[myrank], pattern, kmp_table, myrank);
-		int len;
-
-		int* result = getRealIdx(answer, end-m+1, myrank, str_per_proc, m-1, &len);
-		free(answer);
-
-		// master process does not need to send
-		if(myrank!=master){
+			// implement kmp to get the matching result
+			int* answer = kmp(matrix[myrank], pattern, kmp_table, myrank);
+			int len;
+			int* result = getRealIdx(answer, end-m+1, myrank, str_per_proc, m-1, &len);
+			free(answer);
 			MPI_Send(result, len, MPI_INT, master, tag2, MPI_COMM_WORLD);
+			free(result);
 		}
-		free(result);
-
-		// merge all the processess's result and set the matching bit to 1 -- pinpoint() func
+		/* master proess
+		 * do kmp implementation
+		 * recv all the msg from other processes and merge it using 'pinpoint' func
+		 * print out the result
+		 */
 		if(myrank == master){
-			int final_result[n];
-			int recv[end+m-1];
+			int* final_result = (int *)calloc(n, sizeof(int));
+			int* recv = (int *)calloc(end+m-1, sizeof(int));
+			int* answer = kmp(matrix[myrank], pattern, kmp_table, myrank);
+			int len;
+			int* result = getRealIdx(answer, end-m+1, myrank, str_per_proc, m-1, &len);
+			pinpoint(final_result,result, len);
+			free(answer);
+			free(result);
 			int j;
-			// Recv all other processes msg
-			for(i = 1; i <nproc; i++){
-				MPI_Recv(recv, end+m-1, MPI_INT, i, tag2, MPI_COMM_WORLD, &status);
-				pinpoint(final_result,n, recv, end+m-1);
+			for (j = 0; j < end+m-1; j++)
+			{
+				recv[j] = 0;
 			}
 
-			//print out the check whether it is correct
-			for(j=0;j<n;j++){
-				if(final_result[j] == 1)
-					printf("this is index is : %d\n", j);
+			for(j = 1; j <nproc; j++){
+				MPI_Recv(recv, end+m-1, MPI_INT, j, tag2, MPI_COMM_WORLD, &status);
+				pinpoint(final_result,recv, end+m-1);
 			}
+			free(recv);
+
+			for(j=0;j<n;j++){
+				 if(final_result[j] == 1)
+					printf("Matching index is : %d\n", j);
+			}
+			free(final_result);
 		}
 	}
 	MPI_Barrier(MPI_COMM_WORLD);
