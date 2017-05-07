@@ -2,7 +2,8 @@
  ECE 5720 KMP parallel
  Feng Qi, fq26
  Ying Zong, yz887
- 
+ mpicc -std=gnu11 -o out kmp_MPI.c
+ mpirun -mca plm_rsh_no_tree_spawn 1 --hostfile hostfile -np 3 ./out
  */
 #include "mpi.h"
 #include <stdlib.h>
@@ -13,43 +14,63 @@
 #define master 0
 #define MAX(a,b) ((a) > (b) ? a : b)
 
-// int* kmptable(char* pattern, int len);
 int* kmp(char* target, char* pattern, int* table, int myrank);
 int* preKMP(char* pattern, int len);
 void print(char* arr, int id, int len);
 void fillup(char** matrix, int rankid, char* msg, int len, int offset);
 void freeDouble(char** matrix, int nproc);
 void printMatrix(char **matrix, int nproc, int id, int length);
-void* printOUT(int* answer, int len, int myrank, int x, int y);
+int* getRealIdx(int* answer, int len, int myrank, int x, int y, int* length);
+void pinpoint(int* result, int longlen, int* msg, int shortlen);
 
-void* printOUT(int* answer, int len, int myrank, int x, int y){
+
+void pinpoint(int* result, int longlen, int* msg, int shortlen){
+	int j = 0;
+	for(j=0; j<shortlen; j++){
+		if(j > 0 && msg[j] == 0)
+			break;
+		else{
+			result[msg[j]] = 1;
+		}
+	}
+}
+
+// get the exact idx(es) in each process
+// return back an int pointer
+int* getRealIdx(int* answer, int len, int myrank, int x, int y, int* length){
 	// int package[len];
-	// int* package = (int *) malloc(len * sizeof(int));
+	int* package = (int *) calloc(len, sizeof(int));
 	int index;
 	int real_len = 0;
-	for(int i=0;i < len; i++){
+	int i;
+	for(i=0;i < len; i++){
 		if(i > 0 && answer[i] == 0)
 			break;
 		else{
 			if(myrank == 0){
 				index =  answer[i];
-				// package[real_len++] = index;
+				package[real_len++] = index;
 				printf("This is REAL index: %d\n", index);
 			}else{
 				index = x * myrank - y + answer[i];
-				// package[real_len++] = index;
+				package[real_len++] = index;
 				printf("This is REAL index: %d\n", index);
 			}
 			
 		}
 	}
-	// int* result = (int *)malloc((real_len-1) * sizeof(int));
-	// memcpy(result, package, real_len-1);
-	// free(package);
-	// for(int l = 0;l<real_len-1;l++)
-	// 	printf("%d\n", result[l]);
-	// // package = (int *) remalloc((real_len-1) * sizeof(int));
-	// return result;
+	int* result = (int*)malloc((real_len) * sizeof(int));
+
+	for(i =0 ; i<real_len; i++){
+		if(i > 0 && package[i] == 0)
+			break;
+		else{
+			result[i] = package[i];
+		}
+	}
+	*length = real_len;
+	free(package);
+	return result;
 }
 
 void printMatrix(char **matrix, int nproc, int id, int length){
@@ -67,6 +88,8 @@ void printMatrix(char **matrix, int nproc, int id, int length){
 	printf("\n");
 }
 
+
+// free two-pointer matrix
 void freeDouble(char** matrix, int nproc){
 	for (int i=0; i<nproc; ++i) {
 		free(matrix[i]);
@@ -74,12 +97,14 @@ void freeDouble(char** matrix, int nproc){
 	free(matrix);
 }
 
+
 void fillup(char** matrix, int rankid, char* msg, int len, int offset){
 	int i;
 	for(i=0;i<len;i++)
 		matrix[rankid][offset + i] = msg[i];
 }
 
+// print out one pointer list
 void print(char* arr, int id, int len){
 	int j;
 	printf("This is rank %d\n", id);
@@ -89,15 +114,12 @@ void print(char* arr, int id, int len){
 	printf("\n");
 }
 
-
+// key func kmp
 int* kmp(char* target, char* pattern, int* table, int myrank){
-	printf("This is myrank %d.\n", myrank);
+	// printf("This is myrank %d.\n", myrank);
 	int n = strlen(target);
 	int m = strlen(pattern);
-	int* answer = (int*) malloc((n-m+1) * sizeof(int));
-	for(int k = 0; k<n-m+1;k++){
-		answer[k] = 0;
-	}
+	int* answer = (int*) calloc(n-m+1,sizeof(int));
 	int j=0;
 	int i=0;
 	int index = 0;
@@ -108,7 +130,7 @@ int* kmp(char* target, char* pattern, int* table, int myrank){
 			i++;
 		}
 		if(j == m){
-			printf("this is matching %d.\n", i-j);
+			// printf("this is matching %d.\n", i-j);
 			answer[index++] = i-j;
 			j = table[j-1];
 
@@ -120,16 +142,17 @@ int* kmp(char* target, char* pattern, int* table, int myrank){
 		}
 	}
 	return answer;
-	//return answer;
 }
 
 
 int main(int argc, char** argv){
-	char* target = "AABAABAABAA  AABAABAA  BAA";
+	char* target = "AABAABAABAAAABAABAABAA";
 	char* pattern = "ABA";
 	int n = strlen(target);
 	int m = strlen(pattern);
+
 	int tag = 1;
+	int tag2 = 2;
 	int* kmp_table = preKMP(pattern, m);
 
 	int myrank, nproc;
@@ -144,18 +167,15 @@ int main(int argc, char** argv){
 	int str_per_proc = n/nproc;
 	int end = str_per_proc + n % nproc;
 	int i;
+
 	char** matrix = (char**)malloc(nproc*sizeof(char*));
 	for(i=0;i<nproc;i++){
 		matrix[i] = (char*)malloc((end+m-1) * sizeof(char));
 	}
 
-	//[nproc][end+m-1];
-	// char matrix[nrpoc][end+m-1];
     char send_msg[MAX(m-1, end)];
 	char recv_msg[MAX(m-1, end)];
     char end_msg[MAX(m-1, end)];
-
-
 
 	if(myrank == master){
 		for(i=1;i< nproc;i++){
@@ -186,27 +206,53 @@ int main(int argc, char** argv){
 
 		fillup(matrix, myrank, end_msg, m-1, 0);
 		int* answer = kmp(matrix[myrank], pattern, kmp_table, myrank);
-		printOUT(answer, end-m+1, myrank, str_per_proc, m-1);
+		int len;
+		int* result = getRealIdx(answer, end-m+1, myrank, str_per_proc, m-1, &len);
 		free(answer);
-		// free(result);
+
+		MPI_Send(result, len, MPI_INT, master, tag2, MPI_COMM_WORLD);
+		free(result);
 	}else{
 		strncpy(send_msg, target + str_per_proc-m + 1 + myrank * str_per_proc, m-1);
 		MPI_Send(send_msg, m-1, MPI_CHAR, myrank+1, tag, MPI_COMM_WORLD);
 
+		// the master process does not to recv
 		if(myrank!=master){
 			MPI_Recv(end_msg, m-1, MPI_CHAR, myrank-1, tag, MPI_COMM_WORLD, &status);
 			fillup(matrix, myrank, end_msg, m-1, 0);
 		}
-
+		// implement kmp to get the matching result
 		int* answer = kmp(matrix[myrank], pattern, kmp_table, myrank);
-		printOUT(answer, end-m+1, myrank, str_per_proc, m-1);
+		int len;
 
-		// free(result);
+		int* result = getRealIdx(answer, end-m+1, myrank, str_per_proc, m-1, &len);
 		free(answer);
+
+		// master process does not need to send
+		if(myrank!=master){
+			MPI_Send(result, len, MPI_INT, master, tag2, MPI_COMM_WORLD);
+		}
+		free(result);
+
+		// merge all the processess's result and set the matching bit to 1 -- pinpoint() func
+		if(myrank == master){
+			int final_result[n];
+			int recv[end+m-1];
+			int j;
+			// Recv all other processes msg
+			for(i = 1; i <nproc; i++){
+				MPI_Recv(recv, end+m-1, MPI_INT, i, tag2, MPI_COMM_WORLD, &status);
+				pinpoint(final_result,n, recv, end+m-1);
+			}
+
+			//print out the check whether it is correct
+			for(j=0;j<n;j++){
+				if(final_result[j] == 1)
+					printf("this is index is : %d\n", j);
+			}
+		}
 	}
-
 	MPI_Barrier(MPI_COMM_WORLD);
-
 	freeDouble(matrix, nproc);
 	MPI_Finalize();
 
