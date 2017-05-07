@@ -5,29 +5,19 @@
 #include <string.h>
 #include <time.h>
 #include <stdint.h>
-//int kmp();
+
 int* kmptable(char* pattern, int len);
 void* kmp(char* target, char* pattern, int* table);
 
 int main(int argc, char** argv){
-	char* target = "AABAABAABAA  AABAABAA  BAA";
+	char* target = "AABAABAABAAAABAABAABAA";
 	char* pattern = "ABA";
-	printf("first\n");
 	int m = strlen(target);
 	int n = strlen(pattern);
-	//int* table;
 	int* table = kmptable(pattern, n);
 	
 	kmp(target, pattern, table);
-	// int i;
-	// for(i=0;i<m-n+1;i++){
-	// 	if(i>0 && answer[i] == 0)
-	// 		break;
-	// 	printf("%d,",answer[i]);
-	// }
-	printf("\n");
 	free(table);
-	// free(answer);
 	return 0;
 }
 void* kmp(char* target, char* pattern, int* table){
@@ -42,7 +32,7 @@ void* kmp(char* target, char* pattern, int* table){
 			i++;
 		}
 		if(j == m){
-			printf("this is matching %d. %d\n", i-j,i);
+			printf("Matching index is : %d\n", i-j);
 			j = table[j-1];
 
 		}else if(i < n && pattern[j] != target[i]){
@@ -53,26 +43,8 @@ void* kmp(char* target, char* pattern, int* table){
 		}
 
 	}
-	// int result;
-	// //int* answer = ;
-	// int* answer = (int*)malloc(strlen(target)-strlen(pattern)+1 * sizeof(int));
-	// int n = strlen(target);
-	// int m = strlen(pattern);
-	// int index = 0;
-	// int seen = 0;
-	// for(int i=0;i<n;i++){
-	// 	while(seen > 0 && target[i] != pattern[seen])
-	// 		seen = table[seen-1];
-	// 	if(target[i] == pattern[seen]) seen++;
-	// 	if(seen == m){
-	// 		printf("this is matching %d.\n", i-m+1);
-	// 		// answer[index++] = i-m+1;
-	// 		// printf("this is matching %d.\n", answer[index-1]);
-	// 		seen = 0;
-	// 	}
-	// }
-	// return answer;
 }
+
 int* kmptable(char* pattern, int len){
 	int k = 0;
 	int i = 1;
@@ -87,9 +59,6 @@ int* kmptable(char* pattern, int len){
 			k++;
 		table[i] = k;
 	}
-	for(i=0;i<len;i++)
-		printf("%d,",table[i]);
-	printf("\n");
 	return table;
 }
 
