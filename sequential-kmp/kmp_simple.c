@@ -5,19 +5,27 @@
 #include <string.h>
 #include <time.h>
 #include <stdint.h>
-
+#define BILLION 1000000000L
 int* kmptable(char* pattern, int len);
 void* kmp(char* target, char* pattern, int* table);
 
 int main(int argc, char** argv){
 	char* target = "AABAABAABAAAABAABAABAA";
 	char* pattern = "ABA";
+	struct timespec start1, end1;
+	double diff;
+
 	int m = strlen(target);
 	int n = strlen(pattern);
-	int* table = kmptable(pattern, n);
+	printf("-----This is sequential results using KMP Algo.-----\n");
 	
+	int* table = kmptable(pattern, n);
+	clock_gettime(CLOCK_MONOTONIC, &start1);
 	kmp(target, pattern, table);
+	clock_gettime(CLOCK_MONOTONIC, &end1);
 	free(table);
+	diff =(end1.tv_sec - start1.tv_sec)*BILLION + (end1.tv_nsec - start1.tv_nsec);
+	printf("The execution time of sequential algo using KMP Algo is %lf ns.\n", diff);
 	return 0;
 }
 void* kmp(char* target, char* pattern, int* table){
