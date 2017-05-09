@@ -70,23 +70,42 @@ __global__ void KMP(char* pattern, char* target, int func[], int answer[], int p
 }
 
 int main(int argc, char* argv[]) {
-    const int target_length = 100000;
-    const int pattern_length = 3;
+
     int M = 4;
 
-    char *target;
-    char *pattern;
-    target = (char*)malloc(target_length * sizeof(char));
-    pattern = (char*)malloc(pattern_length * sizeof(char));
+    FILE * file = fopen( "data.txt" , "r");
+    char target[100000];
+    char pattern[3];
+    // char buf[100000];
 
-    srand(SEED);
-    char* dict = "abcdefghijklmnopqrstuvwxyz";
-    for (int i = 0; i < target_length; i++) {
-        target[i] = dict[rand()%26];
+    int CurrentIndex = 0;
+
+    while (CurrentIndex < 2) {
+        if (CurrentIndex == 0) {
+            fgets(target, 100001, file);
+        } else if (CurrentIndex == 1) {
+            fgets(pattern, 4, file);
+        }
+        CurrentIndex++;
     }
-    for (int j = 0; j < pattern_length; j++) {
-        pattern[j] = dict[rand()%26];
-    }
+    int target_length = strlen(target);
+    int pattern_length = strlen(pattern);
+
+    fclose(file);
+
+    // Generate random string
+    // target = (char*)malloc(target_length * sizeof(char));
+    // pattern = (char*)malloc(pattern_length * sizeof(char));
+
+    // srand(SEED);
+    // char* dict = "abcdefghijklmnopqrstuvwxyz";
+    // for (int i = 0; i < target_length; i++) {
+    //     target[i] = dict[rand()%26];
+    // }
+    // for (int j = 0; j < pattern_length; j++) {
+    //     pattern[j] = dict[rand()%26];
+    // }
+
     char *d_target;
     char *d_pattern;
 
