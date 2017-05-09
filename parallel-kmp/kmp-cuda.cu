@@ -1,3 +1,14 @@
+/*
+ * ECE 5720 Parallel Computing Final Project
+ * KMP parallel on MPI
+ * Feng Qi, fq26
+ * Ying Zong, yz887
+ * Cornell University
+ *
+ * Compile : /usr/local/cuda-8.0/bin/nvcc -arch=compute_35 -o cuda kmp-cuda.cu
+ * Run     : ./cuda
+ */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -75,12 +86,12 @@ int main(int argc, char* argv[]) {
     }
     char *d_target;
     char *d_pattern;
-
-    printf("The target length is: %d, the pattern length is %d.\n", target_length, pattern_length);
-    printf("The target string is: \n");
-    printf("%s\n", target);
-    printf("The pattern string is: \n");
-    printf("%s\n", pattern);
+    printf("----- This is parallel results using KMP Algo on CUDA. -----\n");
+    // printf("The target length is: %d, the pattern length is %d.\n", target_length, pattern_length);
+    // printf("The target string is: \n");
+    // printf("%s\n", target);
+    // printf("The pattern string is: \n");
+    // printf("%s\n", pattern);
     int *func;
     int *answer;
 

@@ -1,11 +1,20 @@
-/* ECE 5720 Parallel Final Project 
- * Substring Matching KMP sequential*/
+/*
+ * ECE 5720 Parallel Computing Final Project
+ * KMP parallel on MPI
+ * Feng Qi, fq26
+ * Ying Zong, yz887
+ * Cornell University
+ *
+ * Compile : mpicc -std=gnu11 -o out kmp_simple.c
+ * Run 	   : ./out 
+ */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
 #include <stdint.h>
-#define BILLION 1000000L
+#define MILLION 1000000L
 int* kmptable(char* pattern, int len);
 void* kmp(char* target, char* pattern, int* table);
 
@@ -22,22 +31,19 @@ int main(int argc, char** argv){
     for (j = 0; j < m; j++) {
         pattern[j] = b[j];
     }
-	// char* target = "AABAABAABAAAABAABAABAA";
-	// char* pattern = "ABA";
+
 	struct timespec start1, end1;
 	double diff;
 
-	// int m = strlen(target);
-	// int n = strlen(pattern);
-	printf("-----This is sequential results using KMP Algo.-----\n");
+	printf("----- This is sequential results using KMP Algo. -----\n");
 	
 	int* table = kmptable(pattern, n);
 	clock_gettime(CLOCK_MONOTONIC, &start1);
 	kmp(target, pattern, table);
 	clock_gettime(CLOCK_MONOTONIC, &end1);
+	diff =(end1.tv_sec - start1.tv_sec)*MILLION + (end1.tv_nsec - start1.tv_nsec);
+	printf("When the target length is %d, pattern length is %d, the elapsed time is %0.3f ms.\n", n, m, diff); 
 	free(table);
-	diff =(end1.tv_sec - start1.tv_sec)*BILLION + (end1.tv_nsec - start1.tv_nsec);
-	printf("The execution time of sequential algo using KMP Algo is %.3f ms.\n", diff);
 	return 0;
 }
 void* kmp(char* target, char* pattern, int* table){
@@ -52,7 +58,7 @@ void* kmp(char* target, char* pattern, int* table){
 			i++;
 		}
 		if(j == m){
-			printf("Matching index is : %d\n", i-j);
+			printf("Find a matching substring starting at: %d.\n", i-j);
 			j = table[j-1];
 
 		}else if(i < n && pattern[j] != target[i]){

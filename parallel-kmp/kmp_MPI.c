@@ -6,7 +6,8 @@
  * Cornell University
  *
  * Compile : mpicc -std=gnu11 -o out kmp_MPI.c
- * Run 	  :mpirun -mca plm_rsh_no_tree_spawn 1 --hostfile hostfile -np 3 ./out */
+ * Run 	   : mpirun -mca plm_rsh_no_tree_spawn 1 --hostfile hostfile -np 3 ./out 
+ */
 
 #include "mpi.h"
 #include <stdlib.h>
@@ -14,10 +15,10 @@
 #include <string.h>
 #include <malloc.h> 
 
-
 #define master 0
 #define MAX(a,b) ((a) > (b) ? a : b)
 #define MILLION 1000000L
+
 
 int* kmp(char* target, char* pattern, int* table, int myrank);
 int* preKMP(char* pattern, int len);
@@ -153,8 +154,8 @@ int main(int argc, char** argv){
 	int n = 260;
 	int m = 4;
 
-	char target[n];
-	char pattern[m];
+	char* target = (char*)malloc(n * sizeof(char));
+	char* pattern = (char*)malloc(m * sizeof(char));
 	char* b="abcdefghijklmnopqrstuvwxyz";
     for (i = 0; i < m; i++) {
         pattern[i] = b[i];
@@ -179,37 +180,29 @@ int main(int argc, char** argv){
 	int start_pos = n/nproc;
 	int str_per_proc = n/nproc;
 	int end = str_per_proc + n % nproc;
-	// int i;
 
 	char** matrix = (char**)malloc(nproc*sizeof(char*));
 	for(i=0;i<nproc;i++){
 		matrix[i] = (char*)malloc((end+m-1) * sizeof(char));
 	}
 
-
     char send_msg[MAX(m-1, end)];
 	char recv_msg[MAX(m-1, end)];
     char end_msg[MAX(m-1, end)];
-    // double start, stop; // record time
-    // // double start2, stop2; // record time
-    // double total = 0.0;
+
+    double start,stop;
 
     
 	if(myrank == master){
-
+		printf("----- This is parallel results using KMP Algo with MPI. -----\n");
+		start = MPI_Wtime();
 		for(i=1;i< nproc;i++){	
 			if(i == nproc-1){
 				strncpy(send_msg, target + i*start_pos, end);
-				// start = MPI_Wtime();	
 				MPI_Send(send_msg, end, MPI_CHAR, i, tag, MPI_COMM_WORLD);
-				// stop = MPI_Wtime();
-				// total += stop-start;
 			}else{
 				strncpy(send_msg, target + i*start_pos, str_per_proc);
-				// start = MPI_Wtime();
 				MPI_Send(send_msg, str_per_proc, MPI_CHAR, i, tag, MPI_COMM_WORLD);
-				// stop = MPI_Wtime();
-				// total += stop-start;
 			}
 			
 			
@@ -234,7 +227,7 @@ int main(int argc, char** argv){
 
 		fillup(matrix, myrank, end_msg, m-1, 0);
 		int* answer = kmp(matrix[myrank], pattern, kmp_table, myrank);
-		// print(matrix[myrank], myrank, end);
+		
 		int len;
 		int* result = getRealIdx(answer, end-m+1, myrank, str_per_proc, m-1, &len);
 		free(answer);
@@ -282,31 +275,24 @@ int main(int argc, char** argv){
 			}
 			
 			for(j = 1; j <nproc; j++){
-				// start = MPI_Wtime();
 				MPI_Recv(recv, end+m-1, MPI_INT, j, tag2, MPI_COMM_WORLD, &status);
-				// stop = MPI_Wtime();
-				// total += (stop - start);
 				pinpoint(final_result,recv, end+m-1);
 			}
-			
+			stop = MPI_Wtime();
 			free(recv);
-
+			printf("When the target length is %d, pattern length is %d, the elapsed time is %0.3f ms.\n", n, m, (stop-start) * MILLION); 
 			for(j=0;j<n;j++){
 				 if(final_result[j] == 1)
-					printf("Matching index is : %d\n", j);
+					printf("Find a matching substring starting at: %d.\n", j);
 			}
 			free(final_result);
 		}
 	}
 	MPI_Barrier(MPI_COMM_WORLD);
-	
-	if(myrank == master){
-		printf("herjkew\n");
-		// printf("The execution time of parallel substring matching using KMP Algo on MPI is %lf ms.\n", total*MILLION);
-	}
 	freeDouble(matrix, nproc);
 	MPI_Finalize();
-
+	free(target);
+	free(pattern);
 	return 0;
 }
 
