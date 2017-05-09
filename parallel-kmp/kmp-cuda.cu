@@ -14,6 +14,8 @@
 #include <string.h>
 #include <time.h>
 
+#define SEED 7
+
 // build the kmp table for the subsequent operations
 void preKMP(char* pattern, int func[]) {
     int m = strlen(pattern);
@@ -68,8 +70,8 @@ __global__ void KMP(char* pattern, char* target, int func[], int answer[], int p
 }
 
 int main(int argc, char* argv[]) {
-    const int target_length = 260;
-    const int pattern_length = 4;
+    const int target_length = 100000;
+    const int pattern_length = 3;
     int M = 4;
 
     char *target;
@@ -77,21 +79,22 @@ int main(int argc, char* argv[]) {
     target = (char*)malloc(target_length * sizeof(char));
     pattern = (char*)malloc(pattern_length * sizeof(char));
 
+    srand(SEED);
     char* dict = "abcdefghijklmnopqrstuvwxyz";
     for (int i = 0; i < target_length; i++) {
-        target[i] = dict[i%26];
+        target[i] = dict[rand()%26];
     }
     for (int j = 0; j < pattern_length; j++) {
-        pattern[j] = dict[j%26];
+        pattern[j] = dict[rand()%26];
     }
     char *d_target;
     char *d_pattern;
-    printf("----- This is parallel results using KMP Algo on CUDA. -----\n");
-    // printf("The target length is: %d, the pattern length is %d.\n", target_length, pattern_length);
-    // printf("The target string is: \n");
-    // printf("%s\n", target);
-    // printf("The pattern string is: \n");
-    // printf("%s\n", pattern);
+
+    printf("The target length is: %d, the pattern length is %d.\n", target_length, pattern_length);
+    printf("The target string is: \n");
+    printf("%s\n", target);
+    printf("The pattern string is: \n");
+    printf("%s\n", pattern);
     int *func;
     int *answer;
 
