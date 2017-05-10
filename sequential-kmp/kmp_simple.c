@@ -5,7 +5,7 @@
  * Ying Zong, yz887
  * Cornell University
  *
- * Compile : mpicc -std=gnu11 -o out kmp_simple.c
+ * Compile : gcc -std=gnu11 -o out kmp_simple.c
  * Run 	   : ./out 
  */
 
@@ -19,18 +19,23 @@ int* kmptable(char* pattern, int len);
 void* kmp(char* target, char* pattern, int* table);
 
 int main(int argc, char** argv){
-	int n = 260;
-	int m = 4; 
+	int n = 100000;
+	int m = 3; 
 	int i,j;
-	char target[n];
-	char pattern[m];
-	char* b="abcdefghijklmnopqrstuvwxyz";
-    for (i = 0; i < n; i++) {
-        target[i] = b[i%26];
+	char* target = (char*)malloc(n * sizeof(char));
+	char* pattern = (char*)malloc(m * sizeof(char));
+	FILE * file = fopen( "data.txt" , "r");
+	int CurrentIndex = 0;
+
+    while (CurrentIndex < 2) {
+        if (CurrentIndex == 0) {
+            fgets(target, n+1, file);
+        } else if (CurrentIndex == 1) {
+            fgets(pattern, m+1, file);
+        }
+        CurrentIndex++;
     }
-    for (j = 0; j < m; j++) {
-        pattern[j] = b[j];
-    }
+    fclose(file);	
 
 	struct timespec start1, end1;
 	double diff;
@@ -44,6 +49,9 @@ int main(int argc, char** argv){
 	diff =(end1.tv_sec - start1.tv_sec)*MILLION + (end1.tv_nsec - start1.tv_nsec);
 	printf("When the target length is %d, pattern length is %d, the elapsed time is %0.3f ms.\n", n, m, diff); 
 	free(table);
+	free(target);
+	free(pattern);
+	printf("\n");
 	return 0;
 }
 void* kmp(char* target, char* pattern, int* table){

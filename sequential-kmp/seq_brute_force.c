@@ -18,18 +18,24 @@
 void bruteforce_sequential(char* s, char* t);
 
 int main(int argc, char** argv){
-	int n = 260;
-	int m = 4; 
+	int n = 100000;
+	int m = 3; 
 	int i,j;
 	char* target = (char*)malloc(n * sizeof(char));
 	char* pattern = (char*)malloc(m * sizeof(char));
-	char* b="abcdefghijklmnopqrstuvwxyz";
-    for (i = 0; i < n; i++) {
-        target[i] = b[i%26];
+	FILE * file = fopen( "data.txt" , "r");
+	int CurrentIndex = 0;
+
+    while (CurrentIndex < 2) {
+        if (CurrentIndex == 0) {
+            fgets(target, n+1, file);
+        } else if (CurrentIndex == 1) {
+            fgets(pattern, m+1, file);
+        }
+        CurrentIndex++;
     }
-    for (j = 0; j < m; j++) {
-        pattern[j] = b[j];
-    }
+    fclose(file);
+    printf("This is pattern: %s \n\n", pattern);
 	struct timespec start1, end1;
 	double diff;
 
@@ -41,6 +47,7 @@ int main(int argc, char** argv){
 	printf("When the target length is %d, pattern length is %d, the elapsed time is %0.3f ms.\n", n, m, diff); 
 	free(target);
 	free(pattern);
+	printf("\n");
 	return 1;
 }
 

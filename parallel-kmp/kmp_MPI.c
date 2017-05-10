@@ -35,6 +35,8 @@ void pinpoint(int* result, int* msg, int shortlen){
 	for(j=0; j<shortlen; j++){
 		if(j > 0 && msg[j] == 0)
 			break;
+		else if(j == 0 && msg[j] == 0)
+			continue;
 		else{
 			result[msg[j]] = 1;
 		}
@@ -51,6 +53,8 @@ int* getRealIdx(int* answer, int len, int myrank, int x, int y, int* length){
 	for(i=0;i < len; i++){
 		if(i > 0 && answer[i] == 0)
 			break;
+		else if(i == 0 && answer[i] == 0)
+			continue;
 		else{
 			if(myrank == 0){
 				index =  answer[i];
@@ -151,17 +155,20 @@ int* kmp(char* target, char* pattern, int* table, int myrank){
 
 int main(int argc, char** argv){
 	int i,j;
-	int n = 260;
-	int m = 4;
+	int n = 100000;
+	int m = 3;
 
 	char* target = (char*)malloc(n * sizeof(char));
 	char* pattern = (char*)malloc(m * sizeof(char));
-	char* b="abcdefghijklmnopqrstuvwxyz";
-    for (i = 0; i < m; i++) {
-        pattern[i] = b[i];
-    }
-    for (j = 0; j < n; j++) {
-        target[j] = b[j%26];
+    FILE * file = fopen( "data.txt" , "r");
+    int CurrentIndex = 0;
+    while (CurrentIndex < 2) {
+        if (CurrentIndex == 0) {
+            fgets(target, n+1, file);
+        } else if (CurrentIndex == 1) {
+            fgets(pattern, m+1, file);
+        }
+        CurrentIndex++;
     }
 
 

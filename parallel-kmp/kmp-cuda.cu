@@ -14,7 +14,6 @@
 #include <string.h>
 #include <time.h>
 
-#define SEED 7
 
 // build the kmp table for the subsequent operations
 void preKMP(char* pattern, int func[]) {
@@ -70,21 +69,19 @@ __global__ void KMP(char* pattern, char* target, int func[], int answer[], int p
 }
 
 int main(int argc, char* argv[]) {
-
     int M = 4;
-
+    int n = 100000;
+    int m = 3;    
+    char* target = (char*)malloc(n * sizeof(char));
+    char* pattern = (char*)malloc(m * sizeof(char));
+    printf("----- This is parallel results using KMP Algo on CUDA. -----\n");
     FILE * file = fopen( "data.txt" , "r");
-    char target[100000];
-    char pattern[3];
-    // char buf[100000];
-
     int CurrentIndex = 0;
-
     while (CurrentIndex < 2) {
         if (CurrentIndex == 0) {
-            fgets(target, 100001, file);
+            fgets(target, n+1, file);
         } else if (CurrentIndex == 1) {
-            fgets(pattern, 4, file);
+            fgets(pattern, m+1, file);
         }
         CurrentIndex++;
     }
@@ -93,27 +90,9 @@ int main(int argc, char* argv[]) {
 
     fclose(file);
 
-    // Generate random string
-    // target = (char*)malloc(target_length * sizeof(char));
-    // pattern = (char*)malloc(pattern_length * sizeof(char));
-
-    // srand(SEED);
-    // char* dict = "abcdefghijklmnopqrstuvwxyz";
-    // for (int i = 0; i < target_length; i++) {
-    //     target[i] = dict[rand()%26];
-    // }
-    // for (int j = 0; j < pattern_length; j++) {
-    //     pattern[j] = dict[rand()%26];
-    // }
-
     char *d_target;
     char *d_pattern;
 
-    printf("The target length is: %d, the pattern length is %d.\n", target_length, pattern_length);
-    printf("The target string is: \n");
-    printf("%s\n", target);
-    printf("The pattern string is: \n");
-    printf("%s\n", pattern);
     int *func;
     int *answer;
 
@@ -168,6 +147,7 @@ int main(int argc, char* argv[]) {
     cudaFree(d_pattern); 
     cudaFree(d_func); 
     cudaFree(d_answer);
-
+    free(target);
+    free(pattern);
     return 0;
 }
