@@ -292,6 +292,7 @@ int main(int argc, char** argv){
 				 if(final_result[j] == 1)
 					printf("Find a matching substring starting at: %d.\n", j);
 			}
+			printf("\n");
 			free(final_result);
 		}
 	}

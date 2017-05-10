@@ -42,7 +42,7 @@ int main(int argc, char** argv){
 
 	printf("----- This is sequential results using KMP Algo. -----\n");
 	
-	int* table = kmptable(pattern, n);
+	int* table = kmptable(pattern, m);
 	clock_gettime(CLOCK_MONOTONIC, &start1);
 	kmp(target, pattern, table);
 	clock_gettime(CLOCK_MONOTONIC, &end1);
